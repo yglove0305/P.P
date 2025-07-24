@@ -1,0 +1,82 @@
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --primary: #3e95cd;
+  --text: #333;
+  --accent: #8e5ea2;
+  --muted: #888;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--primary);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+.card input, .card select, .card button, .card textarea {
+  font-size: 1rem;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+}
+.card button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background .2s;
+}
+.card button:hover { background: var(--accent); }
+.card ul, .card table {
+  width: 100%;
+  margin-top: 8px;
+}
+.card ul { list-style: none; }
+.card ul li {
+  padding: 6px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.card table {
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+.card th, .card td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  text-align: left;
+}
+.card th {
+  background: #f0f0f0;
+  cursor: pointer;
+}
+#chart, canvas { max-width: 100%; }
+.flex-row { display: flex; gap: 8px; }
+.small { font-size: .85rem; color: var(--muted); }
+textarea { resize: vertical; min-height: 80px; }
