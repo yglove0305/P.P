@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>P.P Mega Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --primary: #3e95cd;
+      --text: #333;
+      --accent: #8e5ea2;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--primary);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    .card input, .card select, .card button, .card textarea {
+      font-size: 1rem;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+    }
+    .card button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .card button:hover { background: var(--accent); }
+    .card ul, .card table {
+      width: 100%;
+      margin-top: 8px;
+    }
+    .card ul { list-style: none; }
+    .card ul li {
+      padding: 6px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    .card table {
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+    .card th, .card td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: left;
+    }
+    .card th {
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    #chart, canvas { max-width: 100%; }
+    .flex-row { display: flex; gap: 8px; }
+    .small { font-size: .85rem; color: var(--muted); }
+    textarea { resize: vertical; min-height: 80px; }
+  </style>
+</head>
+<body>
+  <h1>P.P Mega Dashboard</h1>
+  <div class="grid">
+    <!-- To-Do List -->
+    <section class="card" id="todo">
+      <h2><i class="fa-solid fa-list-check"></i> 할일 리스트</h2>
+      <div class="flex-row">
+        <input id="newTask" placeholder="할일 입력…" />
+        <button onclick="addTask()">추가</button>
+      </div>
+      <ul id="taskList" class="small"></ul>
+    </section>
+
+    <!-- Data Table -->
+    <section class="card" id="data-table">
+      <h2><i class="fa-solid fa-table"></i> 데이터 테이블</h2>
+      <input id="filterInput" placeholder="검색…" oninput="renderTable()" />
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">이름</th>
+            <th onclick="sortTable('age')">나이</th>
+            <th onclick="sortTable('city')">도시</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </section>
+
+    <!-- CSV Import -->
+    <section class="card" id="csv-import">
+      <h2><i class="fa-solid fa-file-csv"></i> CSV 불러오기</h2>
+      <input type="file" accept=".csv" onchange="handleCSV(event)" />
+      <table>
+        <thead id="csvHead"></thead>
+        <tbody id="csvBody"></tbody>
+      </table>
+    </section>
+
+    <!-- Chart -->
+    <section class="card" id="chart-container">
+      <h2><i class="fa-solid fa-chart-simple"></i> 방문객 차트</h2>
+      <canvas id="chart"></canvas>
+    </section>
+
+    <!-- Calculator -->
+    <section class="card" id="calculator">
+      <h2><i class="fa-solid fa-calculator"></i> 계산기</h2>
+      <input id="expr" placeholder="예: 12 + 7 * 2" />
+      <button onclick="calc()">계산</button>
+      <div id="result" class="small"></div>
+    </section>
+
+    <!-- Unit Converter -->
+    <section class="card" id="unit-converter">
+      <h2><i class="fa-solid fa-arrows-left-right"></i> 단위 변환기</h2>
+      <input id="ucValue" type="number" placeholder="값 입력" />
+      <select id="ucFrom">
+        <option value="m_to_km">미터 → 킬로미터</option>
+        <option value="km_to_m">킬로미터 → 미터</option>
+        <option value="kg_to_g">킬로그램 → 그램</option>
+        <option value="g_to_kg">그램 → 킬로그램</option>
+      </select>
+      <button onclick="convertUnit()">변환</button>
+      <div id="ucResult" class="small"></div>
+    </section>
+
+    <!-- BMI Calculator -->
+    <section class="card" id="bmi">
+      <h2><i class="fa-solid fa-heart-pulse"></i> BMI 계산기</h2>
+      <input id="height" type="number" placeholder="키(cm)" />
+      <input id="weight" type="number" placeholder="몸무게(kg)" />
+      <button onclick="calcBMI()">계산</button>
+      <div id="bmiResult" class="small"></div>
+    </section>
+
+    <!-- Currency Converter -->
+    <section class="card" id="currency">
+      <h2><i class="fa-solid fa-money-bill-wave"></i> 환율 변환기</h2>
+      <input id="curValue" type="number" placeholder="금액 입력" />
+      <select id="curFrom">
+        <option value="USD_KRW">USD → KRW</option>
+        <option value="EUR_KRW">EUR → KRW</option>
+        <option value="KRW_USD">KRW → USD</option>
+      </select>
+      <button onclick="convertCurrency()">변환</button>
+      <div id="curResult" class="small"></div>
+    </section>
+
+    <!-- Timer / Stopwatch -->
+    <section class="card" id="timer">
+      <h2><i class="fa-solid fa-stopwatch"></i> 스톱워치</h2>
+      <div id="timerDisplay" style="font-size:1.5rem; text-align:center;">00:00:00</div>
+      <div class="flex-row">
+        <button onclick="startTimer()">시작</button>
+        <button onclick="stopTimer()">정지</button>
+        <button onclick="resetTimer()">리셋</button>
+      </div>
+    </section>
+
+    <!-- Pomodoro Timer -->
+    <section class="card" id="pomodoro">
+      <h2><i class="fa-solid fa-hourglass-start"></i> 포모도로</h2>
+      <div id="pomodoroDisplay" style="font-size:1.5rem; text-align:center;">25:00</div>
+      <div class="flex-row">
+        <button onclick="startPomodoro()">시작</button>
+        <button onclick="resetPomodoro()">리셋</button>
+      </div>
+    </section>
+
+    <!-- Countdown Timer -->
+    <section class="card" id="countdown">
+      <h2><i class="fa-solid fa-clock"></i> 카운트다운</h2>
+      <input id="cdUntil" type="datetime-local" />
+      <button onclick="startCountdown()">시작</button>
+      <div id="countdownDisplay" class="small"></div>
+    </section>
+
+    <!-- Notepad -->
+    <section class="card" id="notepad">
+      <h2><i class="fa-solid fa-note-sticky"></i> 메모장</h2>
+      <textarea id="noteArea" placeholder="메모 입력…"></textarea>
+      <button onclick="saveNote()">저장</button>
+      <div id="noteStatus" class="small"></div>
+    </section>
+
+    <!-- Expense Tracker -->
+    <section class="card" id="expenses">
+      <h2><i class="fa-solid fa-receipt"></i> 지출 관리</h2>
+      <input id="expDesc" placeholder="설명" />
+      <input id="expAmt" type="number" placeholder="금액" />
+      <button onclick="addExpense()">추가</button>
+      <ul id="expList" class="small"></ul>
+      <div id="expTotal" class="small">합계: 0원</div>
+    </section>
+
+    <!-- Random Quote -->
+    <section class="card" id="quote">
+      <h2><i class="fa-solid fa-quote-left"></i> 명언</h2>
+      <div id="quoteText" class="small" style="min-height:60px;"></div>
+      <button onclick="newQuote()">새 명언</button>
+    </section>
+  </div>
+
+  <script>
+    // To-Do List
+    const tasks = [];
+    function addTask() {
+      const t = document.getElementById('newTask');
+      if (!t.value.trim()) return;
+      tasks.push({ text: t.value, done: false });
+      t.value = ''; renderTasks();
+    }
+    function toggleTask(i) {
+      tasks[i].done = !tasks[i].done; renderTasks();
+    }
+    function renderTasks() {
+      const ul = document.getElementById('taskList');
+      ul.innerHTML = '';
+      tasks.forEach((t,i) => {
+        const li = document.createElement('li');
+        li.textContent = t.text;
+        li.style.textDecoration = t.done ? 'line-through' : '';
+        li.onclick = () => toggleTask(i);
+        ul.append(li);
+      });
+    }
+
+    // Data Table
+    let data = [
+      { name:'김철수', age:28, city:'서울' },
+      { name:'이영희', age:34, city:'부산' },
+      { name:'박민수', age:22, city:'대구' },
+      { name:'최지우', age:41, city:'광주' }
+    ];
+    let sortKey, sortAsc=true;
+    function sortTable(key) {
+      if (sortKey===key) sortAsc=!sortAsc;
+      else { sortKey=key; sortAsc=true; }
+      data.sort((a,b) => {
+        if (typeof a[key]==='string')
+          return sortAsc ? a[key].localeCompare(b[key]) : b[key].localeCompare(a[key]);
+        return sortAsc ? a[key]-b[key] : b[key]-a[key];
+      });
+      renderTable();
+    }
+    function renderTable() {
+      const f = document.getElementById('filterInput').value.toLowerCase();
+      const tb = document.getElementById('tableBody');
+      tb.innerHTML = '';
+      data.filter(r =>
+        Object.values(r).some(v => String(v).toLowerCase().includes(f))
+      ).forEach(r => {
+        const tr = document.createElement('tr');
+        ['name','age','city'].forEach(k => {
+          const td = document.createElement('td');
+          td.textContent = r[k];
+          tr.append(td);
+        });
+        tb.append(tr);
+      });
+    }
+    renderTable();
+
+    // CSV Import
+    function handleCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = () => {
+        const lines = r.result.split('\n').filter(l=>l.trim());
+        const h = lines.shift().split(',');
+        document.getElementById('csvHead').innerHTML =
+          '<tr>'+h.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+        document.getElementById('csvBody').innerHTML =
+          lines.map(l=>'<tr>' + l.split(',').map(c=>`<td>${c}</td>`).join('') + '</tr>').join('');
+      };
+      r.readAsText(file,'utf-8');
+    }
+
+    // Chart
+    const ctx = document.getElementById('chart').getContext('2d');
+    new Chart(ctx,{ type:'bar',
+      data:{ labels:['서울','부산','대구','광주'],
+        datasets:[{
+          label:'방문객 수',
+          data:[120,90,60,30],
+          backgroundColor:['#3e95cd','#8e5ea2','#3cba9f','#e8c3b9']
+        }]
+      },
+      options:{ responsive:true }
+    });
+
+    // Calculator
+    function calc() {
+      try {
+        document.getElementById('result').textContent =
+          eval(document.getElementById('expr').value);
+      } catch {
+        document.getElementById('result').textContent = '오류';
+      }
+    }
+
+    // Unit Converter
+    function convertUnit() {
+      const v = parseFloat(document.getElementById('ucValue').value);
+      const m = document.getElementById('ucFrom').value;
+      let res='';
+      if (m==='m_to_km') res = v/1000 + ' km';
+      if (m==='km_to_m') res = v*1000 + ' m';
+      if (m==='kg_to_g') res = v*1000 + ' g';
+      if (m==='g_to_kg') res = v/1000 + ' kg';
+      document.getElementById('ucResult').textContent = res;
+    }
+
+    // BMI Calculator
+    function calcBMI() {
+      const h = parseFloat(document.getElementById('height').value)/100;
+      const w = parseFloat(document.getElementById('weight').value);
+      if (!h||!w) return;
+      const bmi = (w/(h*h)).toFixed(1);
+      document.getElementById('bmiResult').textContent =
+        `BMI: ${bmi} (${bmi<18.5?'저체중':bmi<25?'정상':'과체중'})`;
+    }
+
+    // Currency Converter (static rates)
+    const rates = { USD_KRW:1230, EUR_KRW:1350, KRW_USD:1/1230 };
+    function convertCurrency() {
+      const v = parseFloat(document.getElementById('curValue').value);
+      const m = document.getElementById('curFrom').value;
+      const r = rates[m];
+      document.getElementById('curResult').textContent =
+        isNaN(v)||!r ? '' : (v * r).toFixed(2)
+        + (m.includes('KRW')?' 원':' $');
+    }
+
+    // Stopwatch
+    let swId, swStart, swElapsed=0, swOn=false;
+    function updateSW() {
+      swElapsed = Date.now() - swStart;
+      const d = new Date(swElapsed);
+      const hh = String(d.getUTCHours()).padStart(2,'0');
+      const mm = String(d.getUTCMinutes()).padStart(2,'0');
+      const ss = String(d.getUTCSeconds()).padStart(2,'0');
+      document.getElementById('timerDisplay').textContent = `${hh}:${mm}:${ss}`;
+    }
+    function startTimer() {
+      if (swOn) return;
+      swOn=true; swStart=Date.now()-swElapsed;
+      swId = setInterval(updateSW, 250);
+    }
+    function stopTimer() { swOn=false; clearInterval(swId); }
+    function resetTimer() { stopTimer(); swElapsed=0;
+      document.getElementById('timerDisplay').textContent='00:00:00'; }
+
+    // Pomodoro
+    let pId, pSec=25*60, pOn=false;
+    function updatePomo() {
+      const m = String(Math.floor(pSec/60)).padStart(2,'0');
+      const s = String(pSec%60).padStart(2,'0');
+      document.getElementById('pomodoroDisplay').textContent = `${m}:${s}`;
+      if (pSec-- <= 0) resetPomodoro();
+    }
+    function startPomodoro() {
+      if (pOn) return;
+      pOn=true; pId=setInterval(updatePomo,1000);
+    }
+    function resetPomodoro() { clearInterval(pId);
+      pOn=false; pSec=25*60; document.getElementById('pomodoroDisplay').textContent='25:00'; }
+
+    // Countdown
+    let cdId;
+    function startCountdown() {
+      clearInterval(cdId);
+      function tick() {
+        const until = new Date(document.getElementById('cdUntil').value);
+        const diff = until - new Date();
+        if (diff<=0) { clearInterval(cdId); document.getElementById('countdownDisplay').textContent='완료!'; return; }
+        const d = Math.floor(diff/86400000);
+        const h = String(Math.floor(diff%86400000/3600000)).padStart(2,'0');
+        const m = String(Math.floor(diff%3600000/60000)).padStart(2,'0');
+        const s = String(Math.floor(diff%60000/1000)).padStart(2,'0');
+        document.getElementById('countdownDisplay').textContent =
+          `${d}일 ${h}:${m}:${s}`;
+      }
+      tick(); cdId=setInterval(tick,1000);
+    }
+
+    // Notepad
+    function saveNote() {
+      const text = document.getElementById('noteArea').value;
+      localStorage.setItem('pp_note', text);
+      document.getElementById('noteStatus').textContent = '저장됨';
+    }
+    document.getElementById('noteArea').value = localStorage.getItem('pp_note')||'';
+
+    // Expense Tracker
+    const exps = JSON.parse(localStorage.getItem('pp_exp'))||[];
+    function renderExpenses() {
+      const ul = document.getElementById('expList');
+      ul.innerHTML = ''; let total=0;
+      exps.forEach((e,i)=> {
+        total += e.amt;
+        const li = document.createElement('li');
+        li.textContent = `${e.desc} – ${e.amt}원`;
+        li.onclick = () => {
+          exps.splice(i,1); saveExps(); renderExpenses();
+        };
+        ul.append(li);
+      });
+      document.getElementById('expTotal').textContent = `합계: ${total}원`;
+    }
+    function saveExps() {
+      localStorage.setItem('pp_exp', JSON.stringify(exps));
+    }
+    function addExpense() {
+      const d = document.getElementById('expDesc').value.trim();
+      const a = parseFloat(document.getElementById('expAmt').value);
+      if (!d||isNaN(a)) return;
+      exps.push({ desc:d, amt: a });
+      saveExps(); renderExpenses();
+      document.getElementById('expDesc').value='';
+      document.getElementById('expAmt').value='';
+    }
+    renderExpenses();
+
+    // Random Quote
+    const quotes = [
+      "행동하지 않으면 아무 일도 일어나지 않는다.",
+      "실패는 성공의 어머니이다.",
+      "작은 습관이 큰 변화를 만든다.",
+      "성공은 준비된 자에게 찾아온다."
+    ];
+    function newQuote() {
+      const q = quotes[Math.floor(Math.random()*quotes.length)];
+      document.getElementById('quoteText').textContent = q;
+    }
+    newQuote();
+  </script>
+</body>
+</html>
